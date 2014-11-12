@@ -42,7 +42,7 @@ instance MonadError e' m ⇒ HoistError m (Either e) e e' where
   → m α
 (<%?>) = flip hoistError
 
-infixr 9 <%?>
+infixl 8 <%?>
 {-# INLINE (<%?>) #-}
 
 -- | A version of '<%?>' that operates on values already in the monad.
@@ -56,7 +56,7 @@ m <%!?> e = do
   x ← m
   x <%?> e
 
-infixr 9 <%!?>
+infixl 8 <%!?>
 {-# INLINE (<%!?>) #-}
 
 -- | A version of @hoistError@ that ignores the error in @t α@ and replaces it
@@ -69,7 +69,7 @@ infixr 9 <%!?>
   → m α
 m <?> e = m <%?> const e
 
-infixr 9 <?>
+infixl 8 <?>
 {-# INLINE (<?>) #-}
 
 -- | A version of @<?>@ that operates on values already in the monad.
@@ -82,5 +82,5 @@ m <!?> e = do
   x ← m
   x <?> e
 
-infixr 9 <!?>
+infixl 8 <!?>
 {-# INLINE (<!?>) #-}

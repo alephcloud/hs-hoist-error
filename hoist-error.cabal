@@ -1,5 +1,5 @@
 name:                hoist-error
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            Some convenience facilities for hoisting errors into a monad
 license:             MIT
 license-file:        LICENSE
