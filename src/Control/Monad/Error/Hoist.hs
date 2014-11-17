@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UnicodeSyntax #-}
 
@@ -12,6 +13,9 @@ module Control.Monad.Error.Hoist
 ) where
 
 import Control.Monad.Error.Class
+import Control.Monad.Trans.Either
+
+import Control.Monad.Trans
 
 -- | A tricky class for easily hoisting errors out of partiality types (e.g.
 -- 'Maybe', @'Either' e@) into a monad. The parameter @e@ represents the error
@@ -33,6 +37,9 @@ instance MonadError e m ⇒ HoistError m Maybe () e where
 
 instance MonadError e' m ⇒ HoistError m (Either e) e e' where
   hoistError f = either (throwError . f) return
+
+instance (m ~ n, MonadError e' m) ⇒ HoistError m (EitherT e n) e e' where
+  hoistError f = eitherT (throwError . f) return
 
 -- | A flipped synonym for 'hoistError'.
 (<%?>)
