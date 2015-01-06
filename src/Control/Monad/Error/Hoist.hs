@@ -14,8 +14,9 @@ module Control.Monad.Error.Hoist
 
 import Control.Monad.Error.Class
 import Control.Monad.Trans.Either
+import Control.Monad.Except
 
-import Control.Monad.Trans
+import Data.Functor.Identity
 
 -- | A tricky class for easily hoisting errors out of partiality types (e.g.
 -- 'Maybe', @'Either' e@) into a monad. The parameter @e@ represents the error
@@ -40,6 +41,12 @@ instance MonadError e' m ⇒ HoistError m (Either e) e e' where
 
 instance (m ~ n, MonadError e' m) ⇒ HoistError m (EitherT e n) e e' where
   hoistError f = eitherT (throwError . f) return
+
+instance MonadError e' m ⇒ HoistError m (ExceptT e Identity) e e' where
+  hoistError f = either (throwError . f) return . runExcept
+
+instance MonadError e' m ⇒ HoistError m (ExceptT e m) e e' where
+  hoistError f = either (throwError . f) return <=< runExceptT
 
 -- | A flipped synonym for 'hoistError'.
 (<%?>)
