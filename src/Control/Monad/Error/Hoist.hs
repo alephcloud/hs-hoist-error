@@ -1,9 +1,9 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE CPP                    #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UnicodeSyntax #-}
-
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE UnicodeSyntax          #-}
 -- | 'HoistError' extends 'MonadError' with 'hoistError', which enables lifting
 -- of partiality types such as 'Maybe' and @'Either' e@ into the monad.
 --
@@ -33,17 +33,30 @@
 -- Similar instances exist for @'Either' e@ and @'EitherT' e m@.
 
 module Control.Monad.Error.Hoist
-( HoistError(..)
-, (<%?>)
-, (<%!?>)
-, (<?>)
-, (<!?>)
-) where
+  ( HoistError(..)
+  , (<%?>)
+  , (<%!?>)
+  , (<?>)
+  , (<!?>)
+  ) where
 
-import Control.Monad.Error.Class
-import Control.Monad.Trans.Either
+import           Control.Monad              ((<=<))
+import           Control.Monad.Error.Class  (MonadError (..))
 
-import Control.Monad.Trans
+import           Data.Either                (Either, either)
+
+#if MIN_VERSION_mtl(2,2,2)
+import           Control.Monad.Except       (Except, ExceptT, runExcept,
+                                             runExceptT)
+#else
+import           Control.Monad.Error        (Error, ErrorT, runErrorT)
+#endif
+
+#if MIN_VERSION_either(5,0,0)
+-- Control.Monad.Trans.Either was removed from @either@ in version 5.
+#else
+import           Control.Monad.Trans.Either (EitherT, runEitherT)
+#endif
 
 -- | A tricky class for easily hoisting errors out of partiality types (e.g.
 -- 'Maybe', @'Either' e@) into a monad. The parameter @e@ represents the error
@@ -56,9 +69,9 @@ class Monad m ⇒ HoistError m t e e' | t → e where
   -- computation into @m@.
   --
   -- @
-  -- hoistError :: 'MonadError' e m -> (() -> e) -> 'Maybe' a -> m a
-  -- hoistError :: 'MonadError' e m -> (a -> e) -> 'Either' a b -> m b
-  -- hoistError :: 'MonadError' e m -> (a -> e) -> 'EitherT' a m b -> m b
+  -- hoistError :: 'MonadError' e m -> (() -> e) -> 'Maybe'       a -> m a
+  -- hoistError :: 'MonadError' e m -> (a  -> e) -> 'Either'  a   b -> m b
+  -- hoistError :: 'MonadError' e m -> (a  -> e) -> 'ExceptT' a m b -> m b
   -- @
   hoistError
     ∷ (e → e')
@@ -71,10 +84,32 @@ instance MonadError e m ⇒ HoistError m Maybe () e where
 instance MonadError e' m ⇒ HoistError m (Either e) e e' where
   hoistError f = either (throwError . f) return
 
+#if MIN_VERSION_either(5,0,0)
+-- Control.Monad.Trans.Either was removed from @either@ in version 5.
+#else
 instance (m ~ n, MonadError e' m) ⇒ HoistError m (EitherT e n) e e' where
   hoistError f = eitherT (throwError . f) return
+#endif
+
+#if MIN_VERSION_mtl(2,2,2)
+instance MonadError e' m ⇒ HoistError m (Except e) e e' where
+  hoistError f = either (throwError . f) return . runExcept
+
+instance MonadError e' m ⇒ HoistError m (ExceptT e m) e e' where
+  hoistError f = either (throwError . f) return <=< runExceptT
+#else
+-- 'ErrorT' was renamed to 'ExceptT' in mtl 2.2.2
+instance MonadError e' m ⇒ HoistError m (ErrorT e m) e e' where
+  hoistError f = either (throwError . f) return <=< runErrorT
+#endif
 
 -- | A flipped synonym for 'hoistError'.
+--
+-- @
+-- '<%?>' :: 'MonadError' e m => 'Maybe'       a -> (() -> e) ->             m a
+-- '<%?>' :: 'MonadError' e m => 'Either'  a   b -> (a  -> e) ->             m b
+-- '<%?>' :: 'MonadError' e m => 'ExceptT' a m b -> (a  -> e) -> 'ExceptT' a m b
+-- @
 (<%?>)
   ∷ HoistError m t e e'
   ⇒ t α
@@ -86,6 +121,12 @@ infixl 8 <%?>
 {-# INLINE (<%?>) #-}
 
 -- | A version of '<%?>' that operates on values already in the monad.
+--
+-- @
+-- '<%!?>' :: 'MonadError' e m => m ('Maybe'       a) -> (() -> e) ->             m a
+-- '<%!?>' :: 'MonadError' e m => m ('Either'  a   b) -> (a  -> e) ->             m b
+-- '<%!?>' :: 'MonadError' e m =>    'ExceptT' a m b  -> (a  -> e) -> 'ExceptT' a m b
+-- @
 (<%!?>)
   ∷ HoistError m t e e'
   ⇒ m (t α)
@@ -100,6 +141,12 @@ infixl 8 <%!?>
 
 -- | A version of 'hoistError' that ignores the error in @t α@ and replaces it
 -- with a new one in @e'@.
+--
+-- @
+-- '<?>' :: 'MonadError' e m => 'Maybe'       a -> e ->             m a
+-- '<?>' :: 'MonadError' e m => 'Either'  a   b -> e ->             m b
+-- '<?>' :: 'MonadError' e m => 'ExceptT' a m b -> e -> 'ExceptT' a m b
+-- @
 (<?>)
   ∷ HoistError m t e e'
   ⇒ t α
@@ -111,6 +158,12 @@ infixl 8 <?>
 {-# INLINE (<?>) #-}
 
 -- | A version of '<?>' that operates on values already in the monad.
+--
+-- @
+-- '<!?>' :: 'MonadError' e m => m ('Maybe'       a) -> e ->             m a
+-- '<!?>' :: 'MonadError' e m => m ('Either'  a   b) -> e ->             m b
+-- '<!?>' :: 'MonadError' e m =>    'ExceptT' a m b  -> e -> 'ExceptT' a m b
+-- @
 (<!?>)
   ∷ HoistError m t e e'
   ⇒ m (t α)
