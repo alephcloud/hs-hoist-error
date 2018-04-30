@@ -5,7 +5,7 @@ description:         Provides a typeclass and useful combinators for hoisting er
 license:             MIT
 license-file:        LICENSE
 author:              Jon Sterling
-maintainer:          jon@jonmsterling.com
+maintainer:          sean.chalmers@data61.csiro.au
 copyright:           Copyright (c) 2014 AlephCloud, Inc
 category:            Control
 build-type:          Simple
