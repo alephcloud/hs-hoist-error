@@ -55,7 +55,7 @@ import           Control.Monad.Error        (Error, ErrorT, runErrorT)
 #if MIN_VERSION_either(5,0,0)
 -- Control.Monad.Trans.Either was removed from @either@ in version 5.
 #else
-import           Control.Monad.Trans.Either (EitherT, runEitherT)
+import           Control.Monad.Trans.Either (EitherT, eitherT, runEitherT)
 #endif
 
 -- | A tricky class for easily hoisting errors out of partiality types (e.g.
