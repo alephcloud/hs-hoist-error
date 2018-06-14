@@ -1,3 +1,7 @@
+0.2.0.1
+
+* Import `eitherT` when using old EitherT instance.
+
 0.2.0.0
 
 * Trying to make things agreeable for removed modules (Control.Monad.Trans.Either) and new instances (Control.Monad.Except(T)).
