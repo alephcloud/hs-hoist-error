@@ -23,10 +23,13 @@ sca.log
 backend.log
 
 ### Emacs ###
-# -*- mode: gitignore; -*-
 *~
 \#*\#
 .\#*
 
 ### OS X ###
 .DS_Store
+
+### Nix ###
+result
+result-doc

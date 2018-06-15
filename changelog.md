@@ -1,3 +1,8 @@
+0.2.1.0
+
+* Removed unicode syntax and variables
+* Added Control.Monad.Error.Hoist.hoistErrorM (= flip (<%!?>))
+
 0.2.0.1
 
 * Import `eitherT` when using old EitherT instance.
